@@ -1,5 +1,6 @@
 import math
 
+# Never changing map values
 GOAL_WIDTH = 1900
 FIELD_LENGTH = 10280
 FIELD_WIDTH = 8240
@@ -10,10 +11,11 @@ boosts = [
     [3072, 4096, 0],
     [3072, -4096, 0],
     [-3072, 4096, 0],
-    [-3072, -4096, 0]
-]
+    [-3072, -4096, 0]]
 
 
+# Works like python arrays but with some added functionality to work like vectors in linear algebra. Was part of
+# example RLBot program and some so I decided to use it as well.
 class Vector3:
     def __init__(self, data):
         self.data = data
@@ -25,7 +27,7 @@ class Vector3:
         return Vector3([self.data[0] - value.data[0], self.data[1] - value.data[1], self.data[2] - value.data[2]])
 
     def __mul__(self, value):
-        return (self.data[0] * value.data[0] + self.data[1] * value.data[1] + self.data[2] * value.data[2])
+        return self.data[0] * value.data[0] + self.data[1] * value.data[1] + self.data[2] * value.data[2]
 
     def magnitude(self):
         return math.sqrt((self.data[0] * self.data[0]) + (self.data[1] * self.data[1]) + (self.data[2] * self.data[2]))
@@ -73,10 +75,11 @@ def quad(a, b, c):
         return n
 
 
+# crudely predicts where the ball will be in a given amount of time
 def future(ball, time):
     x = ball.location.data[0] + (ball.velocity.data[0] * time)
     y = ball.location.data[1] + (ball.velocity.data[1] * time)
-    z = ball.location.data[2]  # + (ball.velocity.data[2] * time)
+    z = ball.location.data[2]  # + (ball.velocity.data[1] * time)
     return Vector3([x, y, z])
 
 

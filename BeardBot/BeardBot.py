@@ -6,11 +6,13 @@ from States import *
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 
-#For clarity, in the RLBot framework agent is refering to the bot, thus the two are synonymous.
-#Any instance of agent is refering to BeardBot.
+# For clarity, in the RLBot framework agent is referring to the bot, thus the two are synonymous.
+# Any instance of agent is referring to BeardBot.
 
 class BeardBot(BaseAgent):
-#this is like our init method.
+
+    # Basically the init method. As stated above, BeardBot is an agent. The RLBot framework has already
+    # initialized the agent "as a safety measure" -RLBot wiki
     def initialize_agent(self):
         self.me = obj()
         self.ball = obj()
@@ -20,13 +22,14 @@ class BeardBot(BaseAgent):
         self.state = calcShot()
         self.controller = calcController
 
+    # Where it is checked if there is an active state. If not a new one is picked.
     def checkState(self):
         if self.state.expired:
-            if calcShot().available(self) == True:
+            if calcShot().available(self):
                 self.state = calcShot()
-            elif quickShot().available(self) == True:
+            elif quickShot().available(self):
                 self.state = quickShot()
-            elif wait().available(self) == True:
+            elif wait().available(self):
                 self.state = wait()
             else:
                 self.state = quickShot()
@@ -36,6 +39,7 @@ class BeardBot(BaseAgent):
         self.checkState()
         return self.state.execute(self)
 
+    # REQUIRED STEP. Cuts down on a lot of typing and helps standardize data throughout program.
     def preprocess(self, game):
         self.players = []
         car = game.game_cars[self.index]

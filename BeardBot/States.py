@@ -4,10 +4,16 @@ from rlbot.agents.base_agent import SimpleControllerState
 from Util import *
 
 
+# A state that has the goal of taking a calculated shot
+# A line is drawn from each of the opponent's goal posts through the balls position. This makes a cone on the
+# other side. Hitting the ball straight on from inside the cone will send it at the opponent's net, usually...
+# Logic: if you are inside the cone, hit the ball. else get inside the cone.
+# This state alone was enough to beat the built in All Star bot.
 class calcShot:
     def __init__(self):
         self.expired = False
 
+    # Checks if this state is usable, conditions being the ball and BeardBot are in a possible scoring position
     def available(self, agent):
         if ballReady(agent) and abs(agent.ball.location.data[1]) < 5050 and (
                 (ballProject(agent) > 400 + (velocity2D(agent.me))) or (
@@ -15,68 +21,71 @@ class calcShot:
             return True
         return False
 
+    # Actual work of the state, where the logic happens
     def execute(self, agent):
         agent.controller = calcController
 
         # getting the coordinates of the goalposts
-        leftPost = Vector3([-sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
-        rightPost = Vector3([sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
+        left_post = Vector3([-sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
+        right_post = Vector3([sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
         center = Vector3([0, 5150 * -sign(agent.team), 200])
 
-        # time stuff that we don't worry about yet, the fact that guess is forced to 0 means this doesn't actually do anything right now
+        # time stuff that I haven't implemented yet. The fact that guess is forced
+        # to 0 means this doesn't actually do anything right now
         time_guess = 0
         bloc = future(agent.ball, time_guess)
 
-        # vectors from the goalposts to the ball & to Gosling
-        ball_left = angle2(bloc, leftPost)
-        ball_right = angle2(bloc, rightPost)
-        agent_left = angle2(agent.me, leftPost)
-        agent_right = angle2(agent.me, rightPost)
+        # vectors from the goalposts to the ball & to BeardBot
+        ball_left = angle2(bloc, left_post)
+        ball_right = angle2(bloc, right_post)
+        agent_left = angle2(agent.me, left_post)
+        agent_right = angle2(agent.me, right_post)
 
         # determining if we are left/right/inside of cone
         if agent_left > ball_left and agent_right > ball_right:
-            goal_target = rightPost
+            goal_target = right_post
         elif agent_left > ball_left and agent_right < ball_right:
             goal_target = None
         elif agent_left < ball_left and agent_right < ball_right:
-            goal_target = leftPost
+            goal_target = left_post
         else:
             goal_target = None
 
-        if goal_target != None:
-            # if we are outside the cone, this is the same as Gosling's old code
-            goal_to_ball = (agent.ball.location - goal_target).normalize()
+        # if we are outside the cone
+        if goal_target is not None:
+            agent_to_ball = (agent.ball.location - goal_target).normalize()
             goal_to_agent = (agent.me.location - goal_target).normalize()
-            difference = goal_to_ball - goal_to_agent
+            difference = agent_to_ball - goal_to_agent
             error = cap(abs(difference.data[0]) + abs(difference.data[1]), 1, 10)
         else:
-            # if we are inside the cone, our line to follow is a vector from the ball to us (although it's still named 'goal_to_ball')
-            goal_to_ball = (agent.me.location - agent.ball.location).normalize()
+            # if we are inside the cone, our line to follow is a vector from the ball to us
+            agent_to_ball = (agent.me.location - agent.ball.location).normalize()
             error = cap(distance2D(bloc, agent.me) / 1000, 0, 1)
 
-        testVector = ROTATE * goal_to_ball
+        test_vector = ROTATE * agent_to_ball
 
-        # same as Gosling's old distance calculation, but now we consider dpp_skew which helps us handle when the ball is moving
+        # Distance calculation
         target_distance = cap((40 + distance2D(agent.ball.location, agent.me) * (error ** 2)) / 1.8, 0, 4000)
         target_location = agent.ball.location + Vector3(
-            [(goal_to_ball.data[0] * target_distance), goal_to_ball.data[1] * target_distance, 0])
+            [(agent_to_ball.data[0] * target_distance), agent_to_ball.data[1] * target_distance, 0])
 
         # this adjusts the target based on the ball velocity perpendicular to the direction we're trying to hit it
         multiplier = cap(distance2D(agent.me, target_location) / 1500, 0, 2)
-        target_mod_distance = cap((testVector * agent.ball.velocity) * multiplier, -1000, 1000)
+        target_mod_distance = cap((test_vector * agent.ball.velocity) * multiplier, -1000, 1000)
         final_mod_vector = Vector3(
-            [testVector.data[0] * target_mod_distance, testVector.data[1] * target_mod_distance, 0])
+            [test_vector.data[0] * target_mod_distance, test_vector.data[1] * target_mod_distance, 0])
         pre_loc = target_location
         target_location += final_mod_vector
 
         # another target adjustment that applies if the ball is close to the wall
         extra = 3850 - abs(target_location.data[0])
         if extra < 0:
-            # we prevent our target from going outside the wall, and extend it so that Gosling gets closer to the wall before taking a shot, makes things more reliable
+            # we prevent our target from going outside the wall, and extend it so that BeardBot gets
+            # closer to the wall before taking a shot, makes things more reliable
             target_location.data[0] = cap(target_location.data[0], -3850, 3850)
             target_location.data[1] = target_location.data[1] + (-sign(agent.team) * cap(extra, -800, 800))
 
-        # getting speed, this would be a good place to modify because it's not very good
+        # getting speed, this would be a good thing to change in the future because it's not very good
         target_local = toLocal(target_location, agent.me)
         angle_to_target = cap(math.atan2(target_local.data[1], target_local.data[0]), -3, 3)
         distance_to_target = distance2D(agent.me, target_location)
@@ -89,10 +98,10 @@ class calcShot:
         colorRed = cap(int((speed / 2300) * 255), 0, 255)
         colorBlue = cap(255 - colorRed, 0, 255)
 
-        # see the rendering tutorial on github about this, just drawing lines from the posts to the ball and one from the ball to the target
+        # rendering (drawing) lines from the posts to the ball and one from the ball to the target
         agent.renderer.begin_rendering()
-        agent.renderer.draw_line_3d(bloc.data, leftPost.data, agent.renderer.create_color(255, 255, 0, 0))
-        agent.renderer.draw_line_3d(bloc.data, rightPost.data, agent.renderer.create_color(255, 0, 255, 0))
+        agent.renderer.draw_line_3d(bloc.data, left_post.data, agent.renderer.create_color(255, 255, 0, 0))
+        agent.renderer.draw_line_3d(bloc.data, right_post.data, agent.renderer.create_color(255, 0, 255, 0))
 
         agent.renderer.draw_line_3d(agent.ball.location.data, pre_loc.data,
                                     agent.renderer.create_color(255, colorRed, 0, colorBlue))
@@ -102,49 +111,57 @@ class calcShot:
                                     agent.renderer.create_color(255, colorRed, 0, colorBlue))
         agent.renderer.end_rendering()
 
-        if ballReady(agent) == False or abs(agent.ball.location.data[1]) > 5050:
+        if ballReady(agent) is False or abs(agent.ball.location.data[1]) > 5050:
             self.expired = True
         return agent.controller(agent, target_location, speed)
 
 
+# A very simple and fast hit on the ball if we are close to it, aka "clearing the ball".
+# it tries to hit it towards the opponent's goal, but unlike calcShot will hit the ball even if its not a good shot.
 class quickShot:
     def __init__(self):
         self.expired = False
 
+    # checks if BeardBot is a reasonable distance from the ball in relation to how close the
+    # ball is to the opponent's goal, and if it can get to the ball fast. A little arbitrary right now.
     def available(self, agent):
         if ballProject(agent) > -1 * distance2D(agent.me, agent.ball) and timeZ(agent.ball) < 1.5:
             return True
         return False
 
+    # Where the logic of the state happens
     def execute(self, agent):
-        leftPost = Vector3([-sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
-        rightPost = Vector3([sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
-        ball_left = angle2(agent.ball.location, leftPost)
-        ball_right = angle2(agent.ball.location, rightPost)
-        agent_left = angle2(agent.me, leftPost)
-        agent_right = angle2(agent.me, rightPost)
+        left_post = Vector3([-sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
+        right_post = Vector3([sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
+
+        ball_left = angle2(agent.ball.location, left_post)
+        ball_right = angle2(agent.ball.location, right_post)
+        agent_left = angle2(agent.me, left_post)
+        agent_right = angle2(agent.me, right_post)
+
         if agent_left > ball_left and agent_right > ball_right:
-            goal_target = leftPost
+            goal_target = left_post
         elif agent_left > ball_left and agent_right < ball_right:
             goal_target = None
         elif agent_left < ball_left and agent_right < ball_right:
-            goal_target = rightPost
+            goal_target = right_post
         else:
             goal_target = None
-        if goal_target != None:
+
+        if goal_target is not None:
             goal_to_ball = (agent.ball.location - goal_target).normalize()
         else:
             goal_to_ball = (agent.me.location - agent.ball.location).normalize()
 
-        testVector = ROTATE * goal_to_ball
+        test_vector = ROTATE * goal_to_ball
         target_distance = cap(distance2D(agent.ball.location, agent.me) / 4, 0, 1000)
         target_location = agent.ball.location + Vector3(
             [(goal_to_ball.data[0] * target_distance), goal_to_ball.data[1] * target_distance, 0])
 
         multiplier = cap(distance2D(agent.me, target_location) / 1500, 0, 2)
-        target_mod_distance = cap((testVector * agent.ball.velocity) * multiplier, -1000, 1000)
+        target_mod_distance = cap((test_vector * agent.ball.velocity) * multiplier, -1000, 1000)
         final_mod_vector = Vector3(
-            [testVector.data[0] * target_mod_distance, testVector.data[1] * target_mod_distance, 0])
+            [test_vector.data[0] * target_mod_distance, test_vector.data[1] * target_mod_distance, 0])
         target_location += final_mod_vector
 
         location = toLocal(target_location, agent.me)
@@ -158,15 +175,16 @@ class quickShot:
 
         agent.controller = shotController
 
-        if self.available(agent) == False:
+        if not self.available(agent):
             self.expired = True
-        if calcShot().available(agent) == True:
+        if calcShot().available(agent):
             self.expired = True
 
+
         agent.renderer.begin_rendering()
-        agent.renderer.draw_line_3d(agent.ball.location.data, leftPost.data,
+        agent.renderer.draw_line_3d(agent.ball.location.data, left_post.data,
                                     agent.renderer.create_color(255, 255, 0, 0))
-        agent.renderer.draw_line_3d(agent.ball.location.data, rightPost.data,
+        agent.renderer.draw_line_3d(agent.ball.location.data, right_post.data,
                                     agent.renderer.create_color(255, 0, 255, 0))
         agent.renderer.draw_line_3d(agent.ball.location.data, target_location.data,
                                     agent.renderer.create_color(255, 0, 255, 255))
@@ -175,6 +193,9 @@ class quickShot:
         return agent.controller(agent, target_location, speed)
 
 
+# BeardBot uses this state if the ball is in a spot we cant hit it, as BeardBot doesn't know how to fly yet.
+# Logic: If the ball is too high to hit right now, grab boost if we need it. Otherwise go to where we think the ball
+# is going to land.
 class wait():
     def __init__(self):
         self.expired = False
@@ -186,7 +207,9 @@ class wait():
     def execute(self, agent):
         # taking a rough guess at where the ball will be in the future, based on how long it will take to hit the ground
         ball_future = future(agent.ball, timeZ(agent.ball))
-        if agent.me.boost < 35:  # if we are low on boost, we'll go for boot
+
+        # if we are low on boost, we'll go for boost
+        if agent.me.boost < 35:
             closest = 0
             closest_distance = distance2D(boosts[0], ball_future)
 
@@ -198,8 +221,8 @@ class wait():
 
             target = boosts[closest]
             speed = 2300
+        # if we have boost, we just go towards the ball_future position, and slow down as we get close
         else:
-            # if we have boost, we just go towards the ball_future position, and slow down just like in exampleATBA as we get close
             target = ball_future
             current = velocity2D(agent.me)
             ratio = distance2D(agent.me, target) / (current + 0.01)
@@ -232,15 +255,15 @@ def frugalController(agent, target, speed):
 
     time_difference = time.time() - agent.start
     if time_difference > 2.2 and distance2D(target, agent.me) > (velocity2D(agent.me) * 2.3) and abs(
-            angle_to_target) < 0.9 and current_speed < speed and current_speed > 220:
+            angle_to_target) < 0.9 and speed > current_speed > 220:
         agent.start = time.time()
     elif time_difference <= 0.1:
         controller_state.jump = True
         controller_state.pitch = -1
-    elif time_difference >= 0.1 and time_difference <= 0.15:
+    elif 0.1 <= time_difference <= 0.15:
         controller_state.jump = False
         controller_state.pitch = -1
-    elif time_difference > 0.15 and time_difference < 1:
+    elif 0.15 < time_difference < 1:
         controller_state.jump = True
         controller_state.yaw = controller_state.steer
         controller_state.pitch = -1
@@ -321,6 +344,7 @@ def shotController(agent, target_object, target_speed):
     return controller_state
 
 
+# Mostly example code form the starter bot. Converted it to the state/controller system for testing. Not currently used.
 class exampleATBA:
     def __init__(self):
         self.expired = False
