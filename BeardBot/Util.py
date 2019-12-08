@@ -1,3 +1,8 @@
+# All of the utility classes, methods, and functions are contained here. Where most of the math actually happens.
+# ---DISCLAIMER---
+# Most of the things in this file are formulas I Googled, code that was part of the example bot (like Vector3), or from
+# the RLBot community. That being said, I did put a good amount of time into researching and understanding the code.
+# A lot of the math is above my level, so the fact that I understand most of whats happening was a win in my book.
 import math
 
 # Never changing map values
@@ -14,7 +19,7 @@ boosts = [
     [-3072, -4096, 0]]
 
 
-# Works like python arrays but with some added functionality to work like vectors in linear algebra. Was part of
+# Basically python arrays but with some added functionality to work like math vectors. Was part of
 # example RLBot program and some so I decided to use it as well.
 class Vector3:
     def __init__(self, data):
@@ -79,7 +84,7 @@ def quad(a, b, c):
 def future(ball, time):
     x = ball.location.data[0] + (ball.velocity.data[0] * time)
     y = ball.location.data[1] + (ball.velocity.data[1] * time)
-    z = ball.location.data[2]  # + (ball.velocity.data[1] * time)
+    z = ball.location.data[2]  # + (ball.velocity.data[1] * time) was causing some problems..
     return Vector3([x, y, z])
 
 

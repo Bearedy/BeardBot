@@ -1,7 +1,5 @@
-import math
-import time
-from rlbot.agents.base_agent import SimpleControllerState
-from Util import *
+# All states contained here. Where the actual game logic happens.
+
 from Controllers import *
 
 

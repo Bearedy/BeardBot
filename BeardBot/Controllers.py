@@ -1,4 +1,5 @@
-import math
+# All controllers contained here. Where the execution of game logic is done. Every controller returns controller output.
+
 import time
 from rlbot.agents.base_agent import SimpleControllerState
 from Util import *
