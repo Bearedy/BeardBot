@@ -3,6 +3,14 @@
 from Controllers import *
 
 
+class deffendOurGoal:
+    def __init__(self):
+        self.expired = False
+
+    def available(self, agent):
+        yes = bytes
+
+
 # A state that has the goal of taking a calculated shot
 # A line is drawn from each of the opponent's goal posts through the balls position. This makes a cone on the
 # other side. Hitting the ball straight on from inside the cone will send it at the opponent's net, usually...
@@ -29,7 +37,7 @@ class calcShot:
         right_post = Vector3([sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
         center = Vector3([0, 5150 * -sign(agent.team), 200])
 
-        # time stuff that I haven't implemented yet. The fact that guess is forced
+        # time stuff that I haven't implemented yet. The fact that time_guess is forced
         # to 0 means this doesn't actually do anything right now
         time_guess = 0
         bloc = future(agent.ball, time_guess)
@@ -130,8 +138,8 @@ class quickShot:
 
     # Where the logic of the state happens
     def execute(self, agent):
-        left_post = Vector3([-sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
-        right_post = Vector3([sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
+        left_post = Vector3([-sign(agent.team) * 750, 5100 * -sign(agent.team), 200])
+        right_post = Vector3([sign(agent.team) * 750, 5100 * -sign(agent.team), 200])
 
         ball_left = angle2(agent.ball.location, left_post)
         ball_right = angle2(agent.ball.location, right_post)
@@ -236,8 +244,8 @@ class wait():
         return frugalController(agent, target, speed)
 
 
-
-# Mostly example code form the starter bot. Converted it to the state/controller system for testing. Not currently used.
+# Testing code form the example bot. Converted it to the state/controller system for testing. Not currently used.
+# All it does is drive at the ball, and is surprisingly effective. This alone usually beats Rocket League's easy bot.
 class exampleATBA:
     def __init__(self):
         self.expired = False

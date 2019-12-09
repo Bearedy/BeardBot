@@ -1,7 +1,7 @@
 # All of the utility classes, methods, and functions are contained here. Where most of the math actually happens.
 # ---DISCLAIMER---
 # Most of the things in this file are formulas I Googled, code that was part of the example bot (like Vector3), or from
-# the RLBot community. That being said, I did put a good amount of time into researching and understanding the code.
+# the RLBot community. That being said, I did put a lot of time into researching and understanding the code.
 # A lot of the math is above my level, so the fact that I understand most of whats happening was a win in my book.
 import math
 
@@ -45,7 +45,7 @@ class Vector3:
             return Vector3([0, 0, 0])
 
 
-class Matrix2():
+class Matrix2:
     def __init__(self, data):
         self.data = data
 
@@ -80,14 +80,15 @@ def quad(a, b, c):
         return n
 
 
-# crudely predicts where the ball will be in a given amount of time
+# crudely predicts where the ball will be in a given amount of time, doesnt take things like walls into account
+# doesn't work too well
 def future(ball, time):
     x = ball.location.data[0] + (ball.velocity.data[0] * time)
     y = ball.location.data[1] + (ball.velocity.data[1] * time)
-    z = ball.location.data[2]  # + (ball.velocity.data[1] * time) was causing some problems..
+    z = ball.location.data[2] + (ball.velocity.data[1] * time)
     return Vector3([x, y, z])
 
-
+# calculates how long till the ball hits the ground
 def timeZ(ball):
     rate = 0.97
     return quad(-325, ball.velocity.data[2] * rate, ball.location.data[2] - 92.75)

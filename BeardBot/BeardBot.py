@@ -27,10 +27,10 @@ class BeardBot(BaseAgent):
         if self.state.expired:
             if calcShot().available(self):
                 self.state = calcShot()
-            elif quickShot().available(self):
-                self.state = quickShot()
             elif wait().available(self):
                 self.state = wait()
+            elif quickShot().available(self):
+                self.state = quickShot()
             else:
                 self.state = quickShot()
 

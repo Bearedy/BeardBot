@@ -1,4 +1,6 @@
-# All controllers contained here. Where the execution of game logic is done. Every controller returns controller output.
+# All controllers contained here. Where the execution of game logic is done. Every controller returns
+# an object created by the RLBot framework, a SimpleControllerState. What it contains is actual game input
+# a human play would do. For example if you want to jump, SimpleControllerState.jump = True
 
 import time
 from rlbot.agents.base_agent import SimpleControllerState
@@ -101,10 +103,10 @@ def shotController(agent, target_object, target_speed):
     elif time_difference <= 0.1:
         controller_state.jump = True
         controller_state.pitch = -1
-    elif time_difference >= 0.1 and time_difference <= 0.15:
+    elif 0.1 <= time_difference <= 0.15:
         controller_state.jump = False
         controller_state.pitch = -1
-    elif time_difference > 0.15 and time_difference < 1:
+    elif 0.15 < time_difference < 1:
         controller_state.jump = True
         controller_state.yaw = math.sin(goal_angle)
         controller_state.pitch = -abs(math.cos(goal_angle))
@@ -112,6 +114,8 @@ def shotController(agent, target_object, target_speed):
     return controller_state
 
 
+# Testing code form the example bot. Converted it to the state/controller system for testing. Not currently used.
+# Again, used in early stages of the bot to test controller stuff.
 def exampleController(agent, target_object, target_speed):
     location = toLocal(target_object, agent.me)
     controller_state = SimpleControllerState()
@@ -137,10 +141,10 @@ def exampleController(agent, target_object, target_speed):
     elif time_difference <= 0.1:
         controller_state.jump = True
         controller_state.pitch = -1
-    elif time_difference >= 0.1 and time_difference <= 0.15:
+    elif 0.1 <= time_difference <= 0.15:
         controller_state.jump = False
         controller_state.pitch = -1
-    elif time_difference > 0.15 and time_difference < 1:
+    elif 0.15 < time_difference < 1:
         controller_state.jump = True
         controller_state.yaw = controller_state.steer
         controller_state.pitch = -1
