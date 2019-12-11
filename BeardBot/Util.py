@@ -20,7 +20,7 @@ boosts = [
 
 
 # Basically python arrays but with some added functionality to work like math vectors. Was part of
-# example RLBot program and some so I decided to use it as well.
+# example RLBot program and so I decided to use it as well.
 class Vector3:
     def __init__(self, data):
         self.data = data

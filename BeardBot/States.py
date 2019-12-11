@@ -3,14 +3,6 @@
 from Controllers import *
 
 
-class deffendOurGoal:
-    def __init__(self):
-        self.expired = False
-
-    def available(self, agent):
-        yes = bytes
-
-
 # A state that has the goal of taking a calculated shot
 # A line is drawn from each of the opponent's goal posts through the balls position. This makes a cone on the
 # other side. Hitting the ball straight on from inside the cone will send it at the opponent's net, usually...
@@ -30,11 +22,13 @@ class calcShot:
 
     # Actual work of the state, where the logic happens
     def execute(self, agent):
+        if agent.debug is True:
+            print("__________inside calc____________")
         agent.controller = calcController
 
-        # getting the coordinates of the goalposts
-        left_post = Vector3([-sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
-        right_post = Vector3([sign(agent.team) * 700, 5100 * -sign(agent.team), 200])
+        # getting the coordinates of the enemy goalposts
+        left_post = Vector3([-sign(agent.team) * 700, 5000 * -sign(agent.team), 200])
+        right_post = Vector3([sign(agent.team) * 700, 5000 * -sign(agent.team), 200])
         center = Vector3([0, 5150 * -sign(agent.team), 200])
 
         # time stuff that I haven't implemented yet. The fact that time_guess is forced
@@ -123,6 +117,39 @@ class calcShot:
         return agent.controller(agent, target_location, speed)
 
 
+class defendPosition:
+    def __init__(self):
+        self.expired = False
+
+    def available(self, agent):
+        goal_center = Vector3([0, 5050 * sign(agent.team), 200])
+        if distance2D(goal_center, agent.ball) < 3000 and (distance2D(agent.me, agent.ball) >
+                                                           distance2D(agent.players[0], agent.ball)):
+            return True
+        return False
+
+    def execute(self, agent):
+        if agent.debug is True:
+            print("__________inside defend____________")
+        agent.controller = frugalController
+        goal_center = Vector3([0, 5050 * sign(agent.team), 200])
+
+        target_local = toLocal(goal_center, agent.me)
+        angle_to_target = cap(math.atan2(target_local.data[1], target_local.data[0]), -3, 3)
+        distance_to_target = distance2D(agent.me, goal_center)
+        if distance_to_target > 2.5 * velocity2D(agent.me):
+            speed = 2300
+        else:
+            speed = 2300 - (340 * (angle_to_target ** 2))
+
+        if distance2D(agent.me, agent.ball) > distance2D(agent.players[0], agent.ball):
+            self.expired = True
+        elif not self.available(agent):
+            self.expired = True
+
+        return agent.controller(agent, goal_center, speed)
+
+
 # A very simple and fast hit on the ball if we are close to it, aka "clearing the ball".
 # it tries to hit it towards the opponent's goal, but unlike calcShot will hit the ball even if its not a good shot.
 class quickShot:
@@ -132,12 +159,15 @@ class quickShot:
     # checks if BeardBot is a reasonable distance from the ball in relation to how close the
     # ball is to the opponent's goal, and if it can get to the ball fast. A little arbitrary right now.
     def available(self, agent):
-        if ballProject(agent) > -1 * distance2D(agent.me, agent.ball) and timeZ(agent.ball) < 1.5:
+        if ballProject(agent) > -1 * distance2D(agent.me, agent.ball) and timeZ(agent.ball) < 1.5 \
+                and ballReady(agent):
             return True
         return False
 
     # Where the logic of the state happens
     def execute(self, agent):
+        if agent.debug is True:
+            print("__________inside quick____________")
         left_post = Vector3([-sign(agent.team) * 750, 5100 * -sign(agent.team), 200])
         right_post = Vector3([sign(agent.team) * 750, 5100 * -sign(agent.team), 200])
 
@@ -186,7 +216,8 @@ class quickShot:
             self.expired = True
         if calcShot().available(agent):
             self.expired = True
-
+        if defendPosition().available(agent):
+            self.expired = True
 
         agent.renderer.begin_rendering()
         agent.renderer.draw_line_3d(agent.ball.location.data, left_post.data,
@@ -212,6 +243,7 @@ class wait():
             return True
 
     def execute(self, agent):
+        print("__________inside wait____________")
         # taking a rough guess at where the ball will be in the future, based on how long it will take to hit the ground
         ball_future = future(agent.ball, timeZ(agent.ball))
 
@@ -255,5 +287,3 @@ class exampleATBA:
         target_speed = velocity2D(agent.ball) + (distance2D(agent.ball, agent.me) / 1.5)
 
         return agent.controller(agent, target_location, target_speed)
-
-

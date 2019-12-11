@@ -6,6 +6,7 @@ from States import *
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 
+
 # For clarity, in the RLBot framework agent is referring to the bot, thus the two are synonymous.
 # Any instance of agent is referring to BeardBot.
 
@@ -16,17 +17,28 @@ class BeardBot(BaseAgent):
     def initialize_agent(self):
         self.me = obj()
         self.ball = obj()
-        self.players = []  # holds other players in match
+        self.players = [obj()]  # holds other players in match
         self.start = time.time()
 
         self.state = calcShot()
         self.controller = calcController
 
+        # debugging stuff
+        self.debug = True
+        self.positions = False
+
     # Where it is checked if there is an active state. If not a new one is picked.
     def checkState(self):
+
+        if self.positions:
+            print(self.players[0].location.data)
+            print(self.team)
+
         if self.state.expired:
             if calcShot().available(self):
                 self.state = calcShot()
+            elif defendPosition().available(self):
+                self.state = defendPosition()
             elif wait().available(self):
                 self.state = wait()
             elif quickShot().available(self):
@@ -64,21 +76,12 @@ class BeardBot(BaseAgent):
             if i != self.index:
                 car = game.game_cars[i]
                 temp = obj()
-                temp.index = i
-                temp.team = car.team
+                # temp.index = i
+                # temp.team = car.team
                 temp.location.data = [car.physics.location.x, car.physics.location.y, car.physics.location.z]
                 temp.velocity.data = [car.physics.velocity.x, car.physics.velocity.y, car.physics.velocity.z]
                 temp.rotation.data = [car.physics.rotation.pitch, car.physics.rotation.yaw, car.physics.rotation.roll]
                 temp.rvelocity.data = [car.physics.angular_velocity.x, car.physics.angular_velocity.y,
                                        car.physics.angular_velocity.z]
-                self.me.boost = car.boost
-                flag = False
-                for item in self.players:
-                    if item.index == i:
-                        item = temp
-                        flag = True
-                        break
-                if flag:
-                    self.players.append(temp)
 
-
+                self.players.append(temp)
